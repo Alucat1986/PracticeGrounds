@@ -1,15 +1,15 @@
-project "Core"
+project "Raycaster2D"
    kind "StaticLib"
    language "C++"
    cppdialect "C++20"
    targetdir "Binaries/%{cfg.buildcfg}"
    staticruntime "off"
 
-   files { "Source/**.h", "Source/**.cpp" }
+   files { "src/**.h", "src/**.cpp" }
 
    includedirs
    {
-      "Source"
+      "src"
    }
 
    targetdir ("../Binaries/" .. OutputDir .. "/%{prj.name}")

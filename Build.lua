@@ -10,8 +10,8 @@ workspace "New Project"
 
 OutputDir = "%{cfg.system}-%{cfg.architecture}/%{cfg.buildcfg}"
 
-group "Core"
-	include "Core/Build-Core.lua"
+group "Raycaster2D"
+	include "Raycaster2D/Build-Raycaster2D.lua"
 group ""
 
 include "App/Build-App.lua"

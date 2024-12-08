@@ -1,5 +1,5 @@
 -- premake5.lua
-workspace "New Project"
+workspace "PracticeGrounds"
    architecture "x64"
    configurations { "Debug", "Release", "Dist" }
    startproject "App"
@@ -10,7 +10,7 @@ workspace "New Project"
 
 OutputDir = "%{cfg.system}-%{cfg.architecture}/%{cfg.buildcfg}"
 
-group "Raycaster2D"
+group "Core"
 	include "Raycaster2D/Build-Raycaster2D.lua"
 group ""
 

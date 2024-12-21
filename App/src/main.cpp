@@ -1,6 +1,6 @@
-#include "Core/Core.h"
+#include "Raycaster2D.hpp"
 
 int main()
 {
-	Core::PrintHelloWorld();
+	Core::HelloSFML();
 }

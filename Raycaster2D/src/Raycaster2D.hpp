@@ -1,7 +1,10 @@
-#pragma once
+#ifndef RAYCASTER2D_HPP
+#define RAYCASTER2D_HPP
 
 namespace Core {
 
-	void PrintHelloWorld();
+	void HelloSFML();
 
 }
+
+#endif

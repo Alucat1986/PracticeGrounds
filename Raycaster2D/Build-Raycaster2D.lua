@@ -9,11 +9,19 @@ project "Raycaster2D"
 
    includedirs
    {
-      "src"
+      "src",
+      "3rd Party/SFML/include"
+   }
+
+   libdirs
+   {
+      "3rd Party/SFML/build/lib"
    }
 
    targetdir ("../Binaries/" .. OutputDir .. "/%{prj.name}")
    objdir ("../Binaries/Intermediates/" .. OutputDir .. "/%{prj.name}")
+
+   defines { "SFML_STATIC" }
 
    filter "system:windows"
        systemversion "latest"
@@ -23,12 +31,14 @@ project "Raycaster2D"
        defines { "DEBUG" }
        runtime "Debug"
        symbols "On"
+       links { "sfml-graphics-s-d", "sfml-window-s-d", "sfml-system-s-d" }
 
    filter "configurations:Release"
        defines { "RELEASE" }
        runtime "Release"
        optimize "On"
        symbols "On"
+       links { "sfml-graphics-s", "sfml-window-s", "sfml-system-s" }
 
    filter "configurations:Dist"
        defines { "DIST" }

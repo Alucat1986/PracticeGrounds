@@ -5,11 +5,11 @@ project "Raycaster2D"
    targetdir "Binaries/%{cfg.buildcfg}"
    staticruntime "off"
 
-   files { "src/**.hpp", "src/**.cpp" }
+   files { "include/**.hpp", "src/**.cpp" }
 
    includedirs
    {
-      "src",
+      "include",
       "3rd Party/SFML/include"
    }
 

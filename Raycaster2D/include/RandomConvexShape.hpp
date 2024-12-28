@@ -8,7 +8,8 @@
 #ifndef RANDOMCONVEXSHAPE_HPP
 #define RANDOMCONVEXSHAPE_HPP
 
-#include <SFML/Graphics.hpp>
+#include <SFML/Graphics/ConvexShape.hpp>
+#include <SFML/System/Vector2.hpp>
 
 namespace Core {
 

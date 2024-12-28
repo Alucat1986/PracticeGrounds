@@ -1,6 +1,13 @@
-#include "Raycaster2D.hpp"
+/**
+ * @file
+ * @brief Contains the main function.
+ * @author Alucat1986
+ * @date 27.12.2024
+ */
 
-int main()
-{
-	Core::HelloSFML();
+#include "Application.hpp"
+
+int main() {
+	Application app;
+	app.run();
 }

@@ -1,3 +1,4 @@
 [submodule "Raycaster2D/3rd Party/SFML"]
 	path = Raycaster2D/3rd Party/SFML
 	url = https://github.com/SFML/SFML.git
+	branch = 3.0.x

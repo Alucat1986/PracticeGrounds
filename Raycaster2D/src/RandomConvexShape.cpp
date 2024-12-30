@@ -20,6 +20,17 @@
  //                                                                                                                    //
  // ****************************************************************************************************************** //
 
+/**
+ * @brief Calculates the quadrant of a given point in relation to a given origin point.
+ * @author Alucat1986
+ * @date 30.12.2024
+ * @param[in] point The point to calculate the quadrant for.
+ * @param[in] origin The origin point.
+ * @return The quadrant of the point.
+ * 
+ * @deprecated This function is currently not used and may be removed in the future.
+ */
+[[deprecated("This function is currently not used and may be removed in the future.")]]
 static int quadrantOfPoint(const sf::Vector2f& point, const sf::Vector2f& origin) {
 	if ( point.x > origin.x && point.y > origin.y ) return 1;
 	else if ( point.x < origin.x && point.y > origin.y ) return 2;
@@ -27,7 +38,14 @@ static int quadrantOfPoint(const sf::Vector2f& point, const sf::Vector2f& origin
 	return 4;
 }
 
-static sf::Vector2f calculateCentroid(const std::vector<sf::Vector2f>& points) {
+/**
+ * @brief Calculates the "center" point of a given vector of points.
+ * @author Alucat1986
+ * @date 30.12.2024
+ * @param[in] points The vector of points to calculate the centroid for.
+ * @return The "center" point of the points.
+ */
+static sf::Vector2f calculateCenterPoint(const std::vector<sf::Vector2f>& points) {
 	float sumX = 0, sumY = 0;
 	for ( const auto& p : points ) {
 		sumX += p.x;
@@ -94,9 +112,11 @@ namespace Core {
 	 * @author Alucat1986
 	 * @date 07.05.2024
 	 * @param[in,out] points The vector of points that needs sorting.
+	 * 
+	 * The function sorts the given vector of points in a way that they are ordered in a clockwise manner. The sorting is based upon the angle between the points and the center point of the shape.
 	 */
 	void RandomConvexShape::sortPoints(std::vector<sf::Vector2f>& points) {
-		sf::Vector2f originPoint = calculateCentroid(points);
+		sf::Vector2f originPoint = calculateCenterPoint(points);
 
 		auto angleComparator = [&originPoint](const sf::Vector2f& a, const sf::Vector2f& b) {
 			float angleA = std::atan2(a.y - originPoint.y, a.x - originPoint.x);
@@ -113,8 +133,11 @@ namespace Core {
 	 * @date 07.05.2024
 	 * @param[in] pointOne First point.
 	 * @param[in] pointTwo Second point.
-	 * @return The angle in degrees
+	 * @return The angle in degrees.
+	 * 
+	 * @deprated This function is currently not used and may be removed in the future.
 	 */
+	[[deprecated("This function is currently not used and may be removed in the future.")]]
 	float RandomConvexShape::angleBetweenTwoPoints(const sf::Vector2f& PointOne, const sf::Vector2f& PointTwo) const {
 		return static_cast<float>((std::atan2(PointOne.y - PointTwo.y, PointOne.x - PointTwo.x) * 180 /
 								   std::numbers::pi) + 180);

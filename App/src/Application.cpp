@@ -6,7 +6,7 @@
  */
 
 #include "Application.hpp"
-#include "include/Raycaster2D.hpp"
+#include "Raycaster2D.hpp"
 
  // ****************************************************************************************************************** //
  //                                                                                                                    //
@@ -20,6 +20,6 @@ Application::Application() {
 
 void Application::run() {
 	//Core::HelloSFML();
-	Core::Raycaster2D raycaster({ 800, 800 });
+	Core::Raycaster2D raycaster;
 	raycaster.run();
 }

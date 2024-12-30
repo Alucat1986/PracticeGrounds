@@ -16,7 +16,7 @@ project "App"
       "include",
 
 	  -- Include Core
-	  "../Raycaster2D",
+	  "../Raycaster2D/include",
       "../Raycaster2D/3rd Party/SFML/include"
    }
 

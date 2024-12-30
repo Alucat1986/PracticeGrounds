@@ -15,14 +15,16 @@ namespace Core {
 
 		while ( window.isOpen() ) {
 			while ( const std::optional event = window.pollEvent() ) {
-				if ( event->is<sf::Event::Closed>() )
+				if ( event->is<sf::Event::Closed>() ) {
 					window.close();
-			}
+					break;
+				} // if ( event->is<sf::Event::Closed>() )
+			} // while ( const std::optional event = window.pollEvent() )
 
 			window.clear();
 			window.draw(shape);
 			window.display();
-		}
+		} // while ( window.isOpen() )
 	}
 
 	// ****************************************************************************************************************** //
@@ -36,9 +38,14 @@ namespace Core {
 		 * @author Alucat1986
 		 * @date 27.12.2024
 		 */
-	Raycaster2D::Raycaster2D() : runApp(true) {
+	Raycaster2D::Raycaster2D() : Running(true), Paused(false) {
 		window = std::make_shared<sf::RenderWindow>(sf::VideoMode({ 800, 800 }), "RaycastingApp");
 		window->setVerticalSyncEnabled(true);
+
+		mousePosition = { 0.f, 0.f };
+		mousePoint.setRadius(2.f);
+		mousePoint.setFillColor(sf::Color::Red);
+		mousePoint.setPosition(mousePosition);
 
 		shapes.reserve(5);
 		std::cout << "== V1: ==\n";
@@ -60,22 +67,47 @@ namespace Core {
 	 * @author Alucat1986
 	 * @date 27.12.2024
 	 */
-	void Raycaster2D::run() const {
+	void Raycaster2D::run() {
 		while ( window->isOpen() ) {
-			while ( const std::optional event = window->pollEvent() ) {
-				if ( event->is<sf::Event::Closed>() )
-					window->close();
-			} // while ( const std::optional event = window.pollEvent() )
+			update();
 
 			window->clear();
+
 			for ( const auto& shape : shapes ) {
 				window->draw(shape);
 			} // for ( const auto& shape : shapes )
+
 			for ( const auto& point : points ) {
 				window->draw(point);
 			} // for ( const auto& point : points )
+
+			window->draw(mousePoint);
+
 			window->display();
 		} // while ( window.isOpen() )
+	}
+
+	/**
+	 * @brief Checks if the Raycaster is running.
+	 * @author Alucat1986
+	 * @date 30.12.2024
+	 * @return true if the Raycaster is running, false otherwise.
+	 */
+	bool Raycaster2D::isRunning() const {
+		return Running;
+	}
+
+	/**
+	 * @brief Updates the Raycaster "every frame".
+	 * @author Alucat1986
+	 * @date 30.12.2024
+	 */
+	void Raycaster2D::update() {
+		handleUserInput();
+
+		if ( !Paused ) {
+			mousePoint.setPosition(mousePosition);
+		} // if ( !Paused )
 	}
 
 	/**
@@ -93,6 +125,28 @@ namespace Core {
 				points.back().setPosition(position);
 			} // for ( const auto& index : std::ranges::views::iota(0, shape.getPointCount()) )
 		} // for ( const auto& shape : shapes )
+	}
+
+	/**
+	 * @brief Handles the user's input and updates the mouse position accordingly.
+	 * @author Alucat1986
+	 * @date 30.12.2024
+	 */
+	void Raycaster2D::handleUserInput() {
+		while ( const std::optional event = window->pollEvent() ) {
+			if ( event->is<sf::Event::Closed>() ||
+				 event->is<sf::Event::KeyPressed>() && event->getIf<sf::Event::KeyPressed>()->scancode == sf::Keyboard::Scancode::Escape ) {
+				window->close();
+				break;
+			} // if ( event->is<sf::Event::Closed>() )
+
+			if ( event->is<sf::Event::MouseEntered>() || event->is<sf::Event::MouseMoved>() ) {
+				
+				if ( const auto* position = event->getIf<sf::Event::MouseMoved>() ) {
+					mousePosition = { static_cast<float>(position->position.x), static_cast<float>(position->position.y) };
+				} // if ( const auto* position = event->getIf<sf::Event::MouseMoved>() )
+			} // if ( event->is<sf::Event::MouseEntered>() || event->is<sf::Event::MouseMoved() )
+		} // while ( const std::optional event = window.pollEvent() )
 	}
 
 } // namespace Core

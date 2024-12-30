@@ -23,16 +23,22 @@ namespace Core {
 	class Raycaster2D {
 	public:
 		Raycaster2D();
-		void run() const;
+		void run();
+		bool isRunning() const;
+		void update();
 
 	private:
 		void preparePoints();
+		void handleUserInput();
 
 	private:
-		bool runApp;
+		bool Running;
+		bool Paused;
 		std::shared_ptr<sf::RenderWindow> window;
 		std::vector<Core::RandomConvexShape> shapes;
 		std::vector<sf::CircleShape> points;
+		sf::CircleShape mousePoint;
+		sf::Vector2f mousePosition;
 	};
 
 }

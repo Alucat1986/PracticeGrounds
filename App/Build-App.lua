@@ -5,18 +5,24 @@ project "App"
    targetdir "Binaries/%{cfg.buildcfg}"
    staticruntime "off"
 
-   files { "include/**.hpp", "src/**.cpp" }
+    files {
+        "include/**.hpp",
+        "src/**.cpp",
+        "**.lua",
+        "**.md"
+    }
 
    includedirs {
       "include",
 
 	  -- Include Core
-	  "../Raycaster2D"
+	  "../Raycaster2D",
+      "../Raycaster2D/3rd Party/SFML/include"
    }
 
-   libdirs
-   {
-      "../Raycaster2D/3rd Party/SFML/build/lib"
+   libdirs {
+      "../Raycaster2D/3rd Party/SFML/build/lib",
+      "../Binaries/" .. OutputDir .. "/Raycaster2D"
    }
 
    links {

@@ -33,17 +33,17 @@ namespace Core {
 		} // while ( window.isOpen() )
 	}
 
-	// ****************************************************************************************************************** //
-	//                                                                                                                    //
-	//                                                      CLASSES                                                       //
-	//                                                                                                                    //
-	// ****************************************************************************************************************** //
+// ****************************************************************************************************************** //
+//                                                                                                                    //
+//                                                      CLASSES                                                       //
+//                                                                                                                    //
+// ****************************************************************************************************************** //
 
-		/**
-		 * @brief Constructor.
-		 * @author Alucat1986
-		 * @date 27.12.2024
-		 */
+	/**
+	 * @brief Constructor.
+	 * @author Alucat1986
+	 * @date 27.12.2024
+	 */
 	Raycaster2D::Raycaster2D() : Running(true), Paused(false) {
 		window = std::make_shared<sf::RenderWindow>(sf::VideoMode({ 800, 800 }), "RaycastingApp");
 		window->setVerticalSyncEnabled(true);
@@ -266,6 +266,12 @@ namespace Core {
 		return intersectWithWindowBorder(pointA, rayDirection);
 	}
 
+	/**
+	 * @brief Checks if the ray intersects with the window border and returns the intersection point if it does.
+	 * @param pointA The origin of the ray.
+	 * @param rayDirection The direction of the ray. 
+	 * @return The intersection point if it exists.
+	 */
 	sf::Vector2f Raycaster2D::intersectWithWindowBorder(const sf::Vertex& pointA, const sf::Vector2f& rayDirection) const {
 		const sf::FloatRect windowBounds({ 0.f, 0.f }, { static_cast<float>(window->getSize().x), static_cast<float>(window->getSize().y) });
 
@@ -297,73 +303,72 @@ namespace Core {
 
 
 
-		/**
-		 * @brief Useful for Debug to see where the points of the shape actually are.
-		 * @author Alucat1986
-		 * @date 29.12.2024
-		 */
-		void Raycaster2D::preparePoints() {
-			for ( const auto& shape : shapes ) {
-				for ( const auto& index : std::ranges::views::iota(0u, shape.getPointCount()) ) {
-					points.emplace_back(2.f);
-					sf::Vector2f position = shape.getPoint(index);
-					position.x += shape.getPosition().x;
-					position.y += shape.getPosition().y;
-					points.back().setPosition(position);
-					points.back().setOrigin({ 1.f, 1.f });
-				} // for ( const auto& index : std::ranges::views::iota(0, shape.getPointCount()) )
-			} // for ( const auto& shape : shapes )
-		}
+	/**
+	 * @brief Useful for Debug to see where the points of the shape actually are.
+	 * @author Alucat1986
+	 * @date 29.12.2024
+	 */
+	void Raycaster2D::preparePoints() {
+		for ( const auto& shape : shapes ) {
+			for ( const auto& index : std::ranges::views::iota(0u, shape.getPointCount()) ) {
+				points.emplace_back(2.f);
+				sf::Vector2f position = shape.getPoint(index);
+				position.x += shape.getPosition().x;
+				position.y += shape.getPosition().y;
+				points.back().setPosition(position);
+				points.back().setOrigin({ 1.f, 1.f });
+			} // for ( const auto& index : std::ranges::views::iota(0, shape.getPointCount()) )
+		} // for ( const auto& shape : shapes )
+	}
 
-		/**
-		 * @brief Prepares the vector of rays for casting them out onto the field and for later intersection.
-		 * @author Alucat1986
-		 * @date 30.12.2024
-		 */
-		void Raycaster2D::prepareRays() {
-			const std::size_t countOfRays = 8;
-			Rays.setPrimitiveType(sf::PrimitiveType::Lines);
-			Rays.resize(countOfRays + 1);
+	/**
+	 * @brief Prepares the vector of rays for casting them out onto the field and for later intersection.
+	 * @author Alucat1986
+	 * @date 30.12.2024
+	 */
+	void Raycaster2D::prepareRays() {
+		const std::size_t countOfRays = 8;
+		Rays.setPrimitiveType(sf::PrimitiveType::Lines);
+		Rays.resize(countOfRays + 1);
+		Rays[0].position = MousePreviousPosition;
+		Rays[0].color = sf::Color::Red;
 
-			Rays[0].position = MousePreviousPosition;
-			Rays[0].color = sf::Color::Red;
+		const double angleStep = 2 * std::numbers::pi / countOfRays;
+		// Equally spaced rays in x directions
+		for ( std::int8_t i = 1; i <= countOfRays; i++ ) {
+			Rays[i].position = Rays[0].position;
+			Rays[i].color = sf::Color::Red;
+			Rays[i].position.x += 2000.f * static_cast<float>(std::cos(i * angleStep));
+			Rays[i].position.y += 2000.f * static_cast<float>(std::sin(i * angleStep));
+		} // for ( std::int8_t i = 1; i < countOfRays; i++ )
+	}
 
-			const double angleStep = 2 * std::numbers::pi / countOfRays;
-			// Equally spaced rays in x directions
-			for ( std::int8_t i = 1; i <= countOfRays; i++ ) {
-				Rays[i].position = Rays[0].position;
-				Rays[i].color = sf::Color::Red;
-				Rays[i].position.x += 2000.f * static_cast<float>(std::cos(i * angleStep));
-				Rays[i].position.y += 2000.f * static_cast<float>(std::sin(i * angleStep));
-			} // for ( std::int8_t i = 1; i < countOfRays; i++ )
-		}
+	/**
+	 * @brief Moves the rays by the given difference vector.
+	 * @author Alucat1986
+	 * @date 30.12.2024
+	 * @param[in] differenceVector The vector to move the rays by.
+	 */
+	void Raycaster2D::moveRays(const std::vector<float>&scalars) {
+		const double angleStep = 2 * std::numbers::pi / (Rays.getVertexCount() - 1);
+		// Equally spaced rays in x directions
+		for ( std::int8_t i = 1; i < Rays.getVertexCount(); i++ ) {
+			Rays[i].position = Rays[0].position;
+			Rays[i].position.x += scalars[i] * static_cast<float>(std::cos(i * angleStep));
+			Rays[i].position.y += scalars[i] * static_cast<float>(std::sin(i * angleStep));
+		} // for ( std::int8_t i = 1; i < countOfRays; i++ )
+	}
 
-		/**
-		 * @brief Moves the rays by the given difference vector.
-		 * @author Alucat1986
-		 * @date 30.12.2024
-		 * @param[in] differenceVector The vector to move the rays by.
-		 */
-		void Raycaster2D::moveRays(const std::vector<float>&scalars) {
-			const double angleStep = 2 * std::numbers::pi / (Rays.getVertexCount() - 1);
-			// Equally spaced rays in x directions
-			for ( std::int8_t i = 1; i < Rays.getVertexCount(); i++ ) {
-				Rays[i].position = Rays[0].position;
-				Rays[i].position.x += scalars[i] * static_cast<float>(std::cos(i * angleStep));
-				Rays[i].position.y += scalars[i] * static_cast<float>(std::sin(i * angleStep));
-			} // for ( std::int8_t i = 1; i < countOfRays; i++ )
-		}
+	/**
+	 * @brief Draws the rays onto the window for visualization purposes. The first vertex is the origin of the rays, the following vertices re the end points of the rays.
+	 * @author Alucat1986
+	 * @date 30.12.2024
+	 */
+	void Raycaster2D::drawRays() const {
+		for ( std::size_t pos = 1; pos < Rays.getVertexCount(); pos++ ) {
+			sf::Vertex line[]{ {Rays[0]}, {Rays[pos]} };
+			window->draw(line, 2, sf::PrimitiveType::Lines);
+		} // for ( std::size_t pos = 1; pos < Rays.size(); pos++ )
+	}
 
-		/**
-		 * @brief Draws the rays onto the window for visualization purposes. The first vertex is the origin of the rays, the following vertices are the end points of the rays.
-		 * @author Alucat1986
-		 * @date 30.12.2024
-		 */
-		void Raycaster2D::drawRays() const {
-			for ( std::size_t pos = 1; pos < Rays.getVertexCount(); pos++ ) {
-				sf::Vertex line[]{ {Rays[0]}, {Rays[pos]} };
-				window->draw(line, 2, sf::PrimitiveType::Lines);
-			} // for ( std::size_t pos = 1; pos < Rays.size(); pos++ )
-		}
-
-	} // namespace Core
+} // namespace Core

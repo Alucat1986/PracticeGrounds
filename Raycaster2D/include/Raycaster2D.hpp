@@ -21,6 +21,8 @@
 
 namespace Core {
 
+	struct IntersectionPoint;
+
 	void HelloSFML();
 
 	class Raycaster2D {
@@ -34,8 +36,14 @@ namespace Core {
 		void render(float deltaTime);
 
 		std::vector<float> handleCollisions();
-		sf::Vector2f intersect(const sf::Vertex& pointA, const sf::Vertex& pointB, const Core::RandomConvexShape& shape) const;
-		sf::Vector2f intersectWithWindowBorder(const sf::Vertex& pointA, const sf::Vector2f& rayDirection) const;
+		sf::Vector2f intersect(const sf::Vertex&				pointA,
+							   const sf::Vertex&				pointB,
+							   const Core::RandomConvexShape&	shape) const;
+
+		IntersectionPoint calculateIntersectionPoint(const sf::Vector2f& pointA,
+													 const sf::Vector2f& rayDirection,
+													 const sf::Vector2f& segStart,
+													 const sf::Vector2f& segDirection) const;
 
 		void preparePoints();
 		void prepareRays();
@@ -45,16 +53,15 @@ namespace Core {
 	private:
 		bool Running;
 		bool Paused;
-		sf::Font FpsFont;
-		std::shared_ptr<sf::Text> FpsText;
-		std::shared_ptr<sf::Text> PauseText;
 
-		std::shared_ptr<sf::RenderWindow> window;
-		std::vector<Core::RandomConvexShape> shapes;
-		std::vector<sf::CircleShape> points;
-		
-		sf::VertexArray Rays;
-		sf::Vector2f MousePreviousPosition;
+		sf::Font								FpsFont;
+		std::unique_ptr<sf::Text>				FpsText;
+		std::unique_ptr<sf::Text>				PauseText;
+		std::unique_ptr<sf::RenderWindow>		window;
+		std::vector<Core::RandomConvexShape>	shapes;
+		std::vector<sf::CircleShape>			points;
+		sf::VertexArray							Rays;
+		sf::Vector2f							MousePreviousPosition;
 	};
 
 }

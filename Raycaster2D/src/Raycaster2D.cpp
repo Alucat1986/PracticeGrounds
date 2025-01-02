@@ -1,4 +1,5 @@
 #include <iostream>
+#include <map>
 #include <numbers>
 #include <numeric>
 #include <ranges>
@@ -7,7 +8,19 @@
 
 #include "Raycaster2D.hpp"
 
+
+
 namespace Core {
+	/**
+	 * @brief Struct for an intersection point.
+	 * @author Alucat1986
+	 * @date 02.01.2025
+	 */
+	struct IntersectionPoint {
+		float Scalar;
+		sf::Vector2f Point;
+	};
+
 	/**
 	 * @brief A little test function to see if a window with a green circle is displayed correctly using SFML.
 	 *
@@ -45,7 +58,7 @@ namespace Core {
 	 * @date 27.12.2024
 	 */
 	Raycaster2D::Raycaster2D() : Running(true), Paused(false) {
-		window = std::make_shared<sf::RenderWindow>(sf::VideoMode({ 800, 800 }), "RaycastingApp");
+		window = std::make_unique<sf::RenderWindow>(sf::VideoMode({ 800, 800 }), "RaycastingApp");
 		window->setVerticalSyncEnabled(true);
 		//window->setFramerateLimit(60);
 
@@ -55,11 +68,11 @@ namespace Core {
 			std::cerr << "Could not load font from file!\n";
 		} // if ( !FpsFont.loadFromFile("C:/Windows/Fonts/arial.ttf") )
 
-		FpsText = std::make_shared<sf::Text>(FpsFont, "FPS: 0", 18);
+		FpsText = std::make_unique<sf::Text>(FpsFont, "FPS: 0", 18);
 		FpsText->setFillColor(sf::Color::White);
 		FpsText->setPosition({ 10.f, 10.f });
 
-		PauseText = std::make_shared<sf::Text>(FpsFont, "Game Paused\nPress 'R' to Resume");
+		PauseText = std::make_unique<sf::Text>(FpsFont, "Game Paused\nPress 'R' to Resume");
 		PauseText->setFillColor(sf::Color::Yellow);
 		PauseText->setPosition({ 200.f, 200.f });
 
@@ -212,96 +225,112 @@ namespace Core {
 	}
 
 	/**
-	 * @brief Calculates the intersection point of a line and a shape.
+	 * @brief Calculates the intersection point of a line and a shape or the World Border.
 	 * @author Alucat1986
-	 * @date 31.12.2024
-	 * @param[in] line The line to calculate the intersection point for.
+	 * @date 02.01.2025
+	 * @param[in] pointA The starting point of the ray.
+	 * @param[in] pointB The end point of the ray.
 	 * @param[in] shape The shape to calculate the intersection point for.
-	 * @return The intersection point if it exists, otherwise an intersection Point with the "World Border".
+	 * @return The intersection point if it exists, either one with the shape or with the window border.
 	 */
 	sf::Vector2f Raycaster2D::intersect(const sf::Vertex& pointA, const sf::Vertex& pointB, const Core::RandomConvexShape& shape) const {
 		sf::Vector2f rayDirection = pointB.position - pointA.position;
 		std::size_t countOfPoints = shape.getPointCount();
 
-		std::size_t segIndex = 0; // huh??? Inside the for it doesn't work but here?
+		std::map<std::size_t, sf::Vector2f> intersections;
+
+		const sf::FloatRect windowBounds({ 0.f, 0.f }, { static_cast<float>(window->getSize().x), static_cast<float>(window->getSize().y) });
+		std::array<sf::Vector2f, 4> borderSegments = {
+			sf::Vector2f(0.f, 0.f),
+			sf::Vector2f(windowBounds.size.x, 0.f),
+			sf::Vector2f(0.f, windowBounds.size.y),
+			sf::Vector2f(windowBounds.size.x, windowBounds.size.y)
+		};
+
+		// Intersection Points with the Window Border.
+		for ( std::size_t borIndex = 0; borIndex < borderSegments.size(); borIndex++ ) {
+			sf::Vector2f borderDirection = borderSegments[(borIndex + 1) % borderSegments.size()] - borderSegments[borIndex];
+			IntersectionPoint intersectPoint = calculateIntersectionPoint({ pointA.position.x, pointA.position.y },
+																		    rayDirection, borderSegments[borIndex],
+																		    borderDirection);
+
+			if ( intersectPoint.Scalar != -1.f ) {
+				intersections.emplace(intersectPoint.Scalar, intersectPoint.Point);
+			} // if ( intersectPoint.Scalar != -1.f )
+		} // for ( std::size_t borIndex = 0; borIndex < borderSegments.size(); borIndex++ )
+
+		//std::size_t segIndex = 0; // huh??? Inside the for it doesn't work but here?
 		// std::size_t segIndex = 0; => segIndex == 0;
 		// for ( std::size_t segIndex = 0; segIndex < countOfPoints; segIndex++ ) => segIndex == 1412923942927392472 (very long number)
-		for ( ; segIndex < countOfPoints; segIndex++ ) {
+		// Intersection Points with the Shape.
+		for ( std::size_t segIndex = 0; segIndex < countOfPoints; segIndex++ ) {
 			sf::Vector2f segStart = shape.getPoint(segIndex);
 			sf::Vector2f segDirection = shape.getPoint((segIndex + 1) % countOfPoints) - segStart;
 
-			float rayMag = rayDirection.lengthSquared();
-			float segMag = segDirection.lengthSquared();
-			if ( rayDirection.x / rayMag == segDirection.x / segMag && rayDirection.y / rayMag == segDirection.y / segMag ) {
-				return intersectWithWindowBorder(pointA, rayDirection);
-			} // if ( rayDirection.x / rayMag == segDirection.x / segMag && rayDirection.y / rayMag == segDirection.y / segMag )
-
-			// Solve the equation system
-			// Ray X = pointA.x + rayDirection.x * t
-			// Ray Y = pointA.y + rayDirection.y * t
-			// Seg X = segStart.x + segDirection.x * s
-			// Seg Y = segStart.y + segDirection.y * s
-			// Ray X = Seg X => pointA.x + rayDirection.x * t = segStart.x + segDirection.x * s
-			// Ray Y = Seg Y => pointA.y + rayDirection.y * t = segStart.y + segDirection.y * s
-			// Solve for t
-			// t = (segStart.x + segDirection.x * s - pointA.x) / rayDirection.x = (segStart.y + segDirection.y * s - pointA.y) / rayDirection.y
-			// Multiply both sides by rayDirection.x * rayDirection.y
-			// segStart.x * rayDirection.y + segDirection.x * s * rayDirection.y - pointA.x * rayDirection.y = segStart.y * rayDirection.x + segDirection.y * s * rayDIrection.x - pointA.y * rayDirection.x
-			// Solve for s
-			// s = (rayDirection.x * (segStart.y - pointA.y) + rayDirection.y * (pointA.x - segStart.x)) / (segDirection.x * rayDirection.y - segDirection.y * rayDirection.x)
-			// Set s into the equation for t
-			// t = (segStart.x + segDirection.x * s -pointA.x) / rayDirection.x
-
-			float s = (rayDirection.x * (segStart.y - pointA.position.y) + rayDirection.y * (pointA.position.x - segStart.x)) /
-				(segDirection.x * rayDirection.y - segDirection.y * rayDirection.x);
-			float t = (segStart.x + segDirection.x * s - pointA.position.x) / rayDirection.x;
-
-			if ( t < 0 || s < 0 || s > 1 ) {
-				continue;
-			} // if ( t < 0 || s < 0 || s > 1 ^ )
-
-			return { pointA.position.x + rayDirection.x * t, pointA.position.y + rayDirection.y * t };
+			IntersectionPoint intersectPoint = calculateIntersectionPoint({ pointA.position.x, pointA.position.y },
+																			rayDirection, segStart, segDirection);
+			if ( intersectPoint.Scalar != -1.f ) {
+				intersections.emplace(intersectPoint.Scalar, intersectPoint.Point);
+			} // if ( intersectPoint.Scalar != -1.f )
 		} // for ( std::size_t segIndex = 0; segIndex < shape.getPointCount; segIndex++ )
 
-		return intersectWithWindowBorder(pointA, rayDirection);
+		auto minElement = std::ranges::min_element(intersections, [](const auto& lhs, const auto& rhs) {
+			return lhs.first < rhs.first; });
+
+		if ( minElement != intersections.end() ) {
+			return minElement->second;
+		} // if ( minElement != intersections.end() )
+		else {
+			return { -1.f, -1.f };
+		} // else
 	}
 
 	/**
-	 * @brief Checks if the ray intersects with the window border and returns the intersection point if it does.
-	 * @param pointA The origin of the ray.
-	 * @param rayDirection The direction of the ray. 
-	 * @return The intersection point if it exists.
+	 * @brief Calculates the intersection point of a ray and a segment of a shape.
+	 * @author Alucat1986
+	 * @date 02.01.2025
+	 * @param[in] pointA The origin of the ray.
+	 * @param[in] rayDirection The direction of the ray.
+	 * @param[in] segStart The origin of the segment.
+	 * @param[in] segDirection The direction of the segment.
+	 * @return The intersection point if it exists, otherwise an intersection point with all values == -1.f.
 	 */
-	sf::Vector2f Raycaster2D::intersectWithWindowBorder(const sf::Vertex& pointA, const sf::Vector2f& rayDirection) const {
-		const sf::FloatRect windowBounds({ 0.f, 0.f }, { static_cast<float>(window->getSize().x), static_cast<float>(window->getSize().y) });
+	IntersectionPoint Raycaster2D::calculateIntersectionPoint(const sf::Vector2f&	pointA,
+															  const sf::Vector2f&	rayDirection,
+															  const sf::Vector2f&	segStart,
+															  const sf::Vector2f&	segDirection) const {
+		// Solve the equation system, after https://paulbourke.net/geometry/pointlineplane/
+		// Pa = pointA + t * (pointB - pointA)
+		// Pb = segStart + s * (segEnd - segStart)
+		// Pa = Pb =>
+		// pointA.x + t * rayDirection.x = segStart.x + s * segDirection.x
+		// pointA.y + t * rayDirection.y = segStart.y + s * segDirection.y
+		// =>
+		// t = (segDirection.x * (pointA.y - segStart.y) - (segDirection.y * (pointA.x - segStart.x))) /
+		//	   (segDirection.y * rayDirection.x - segDirection.x * rayDirection.y)
+		// s = (rayDirection.x * (pointA.y - segStart.y) - (segDirection.y * (pointA.x - segStart.x))) /
+		//	   (segDirection.y * rayDirection.x - segDirection.x * rayDirection.y)
+		// =>
+		// Intersection.x = pointA.x + t * rayDirection.x
+		// Intersection.y = pointA.y + t * rayDirection.y
 
-		float tMin = std::numeric_limits<float>::max();
-		sf::Vector2f intersectionPoint;
+		float denominator = segDirection.y * rayDirection.x - segDirection.x * rayDirection.y;
+		if ( denominator != 0 ) {
+			// Calculate the intersection point
+			float numeratorT = segDirection.x * (pointA.y - segStart.y) - (segDirection.y * (pointA.x - segStart.x));
+			float numeratorS = rayDirection.x * (pointA.y - segStart.y) - (segDirection.y * (pointA.x - segStart.x));
 
-		std::array<sf::Vector2f, 4> borderSegments = {
-			sf::Vector2f( 0.f, 0.f ),
-			sf::Vector2f( windowBounds.size.x, 0.f ),
-			sf::Vector2f( 0.f, windowBounds.size.y ),
-			sf::Vector2f( windowBounds.size.x, windowBounds.size.y )
-		};
+			float t = numeratorT / denominator;
+			float s = numeratorS / denominator;
 
-		for ( std::size_t index = 0; index < borderSegments.size(); index += 2 ) {
-			sf::Vector2f segStart = borderSegments[index];
-			sf::Vector2f segDirection = borderSegments[index + 1] - segStart;
-
-			float s = (rayDirection.x * (segStart.y - pointA.position.y) + rayDirection.y * (pointA.position.x - segStart.x)) /
-				(segDirection.x * rayDirection.y - segDirection.y * rayDirection.x);
-			float t = (segStart.x + segDirection.x * s - pointA.position.x) / rayDirection.x;
-
-			if ( t > 0 && s >= 0 && s <= 1 && t < tMin ) {
-				tMin = t;
-				intersectionPoint = { pointA.position.x + rayDirection.x * t, pointA.position.y + rayDirection.y * t };
-			} // if ( t > 0 && s >= 0 && s <= 1 && t < tMin )
-		} // for ( std::size_t index = 0; index < borderSegments.size(); i += 2 )
-	return intersectionPoint;
+			if ( (t >= 0 && t <= 1) && (s >= 0 && s <= 1) ) {
+				return { t, { pointA.x + t * rayDirection.x, pointA.y + t * rayDirection.y} };
+			} // if ( (t >= 0 && t <= 1) && (s >= 0 && s <= 1) )
+		} // if ( denominator != 0 )
+		else {
+			return { -1.f, { -1.f, -1.f } };
+		} // else if ( denominator == 0 )
 	}
-
-
 
 	/**
 	 * @brief Useful for Debug to see where the points of the shape actually are.
@@ -331,32 +360,27 @@ namespace Core {
 		Rays.setPrimitiveType(sf::PrimitiveType::Lines);
 		Rays.resize(countOfRays + 1);
 		Rays[0].position = MousePreviousPosition;
-		Rays[0].color = sf::Color::Red;
 
-		const double angleStep = 2 * std::numbers::pi / countOfRays;
-		// Equally spaced rays in x directions
-		for ( std::int8_t i = 1; i <= countOfRays; i++ ) {
-			Rays[i].position = Rays[0].position;
-			Rays[i].color = sf::Color::Red;
-			Rays[i].position.x += 2000.f * static_cast<float>(std::cos(i * angleStep));
-			Rays[i].position.y += 2000.f * static_cast<float>(std::sin(i * angleStep));
-		} // for ( std::int8_t i = 1; i < countOfRays; i++ )
+		for ( std::size_t pos = 0; pos <= countOfRays; pos++ ) {
+			Rays[pos].color = sf::Color::Red;
+		} // for ( std::size_t pos = 0; pos <= countOfRays; pos++ )
+		moveRays({ 0.f, 1'500.f, 1'500.f, 1'500.f, 1'500.f, 1'500.f, 1'500.f, 1'500.f, 1'500.f });
 	}
 
 	/**
 	 * @brief Moves the rays by the given difference vector.
 	 * @author Alucat1986
 	 * @date 30.12.2024
-	 * @param[in] differenceVector The vector to move the rays by.
+	 * @param[in] scalars The scalars of each ray to determine it's length.
 	 */
-	void Raycaster2D::moveRays(const std::vector<float>&scalars) {
+	void Raycaster2D::moveRays(const std::vector<float>& scalars) {
 		const double angleStep = 2 * std::numbers::pi / (Rays.getVertexCount() - 1);
 		// Equally spaced rays in x directions
-		for ( std::int8_t i = 1; i < Rays.getVertexCount(); i++ ) {
-			Rays[i].position = Rays[0].position;
-			Rays[i].position.x += scalars[i] * static_cast<float>(std::cos(i * angleStep));
-			Rays[i].position.y += scalars[i] * static_cast<float>(std::sin(i * angleStep));
-		} // for ( std::int8_t i = 1; i < countOfRays; i++ )
+		for ( std::size_t pos = 1; pos < Rays.getVertexCount(); pos++ ) {
+			Rays[pos].position = Rays[0].position;
+			Rays[pos].position.x += scalars[pos] * static_cast<float>(std::cos(pos * angleStep));
+			Rays[pos].position.y += scalars[pos] * static_cast<float>(std::sin(pos * angleStep));
+		} // for ( std::int8_t pos = 1; pos < countOfRays; pos++ )
 	}
 
 	/**
